@@ -1,28 +1,42 @@
-# Coursera Full Course Downloader
+# Coursera Downloader Pro: Custom UI/UX Redesign
 
-A GUI for easy downloading of Coursera courses.
+> **Acknowledgments & Credits:** The core downloading engine of this application, was developed by touhid314. 
+> 
+> **My Contribution:** This specific fork focuses entirely on a visual overhaul and UI/UX modernization of the original PyQt5 interface to provide a more polished and intuitive user experience.
 
-Site for downloading the Windows app: https://coursera-downloader.rf.gd/
+## Overview
 
-# Description
+This project is a custom graphical frontend built on top of a highly capable Coursera downloading engine. While the original repository provided excellent core functionality for archiving courses, my goal was to enhance the presentation layer. 
 
-Download videos, assignments, notes and all other resources of a course saved week by week just as in the course.
-![coursera-downloader-v3 0 0_main_window](https://github.com/user-attachments/assets/d9d558c5-0479-42b5-827d-7a97d6418128)
+I redesigned the PyQt5 interface to make the tool feel more like a modern, premium desktop application, focusing on layout improvements, visual feedback, and overall aesthetic consistency.
 
-![image](https://github.com/touhid314/Coursera-Downloader/assets/69526008/6b210f4e-837e-489d-83b9-6c6940cae660)
+## Tech Stack (Frontend Focus)
 
-![image](https://github.com/touhid314/Coursera-Downloader/assets/69526008/13a145e5-3c28-4630-bce0-32267fc3a690)
+* **GUI Framework:** `PyQt5` (Focus on custom styling, layout management, and visual widgets).
+* **Core Engine (Original Author):** Python, `requests`, `browser_cookie3` (Authentication), `BeautifulSoup4`.
 
-# Usage Guide
-Check the site for updated info: https://coursera-downloader.rf.gd/
+## UI/UX Enhancements (My Contributions)
 
-Shield: [![CC BY-NC 4.0][cc-by-nc-shield]][cc-by-nc]
+### 1. Visual Modernization
+* Redesigned the main window layout to maximize screen real estate and improve the visual hierarchy of the configuration options.
+* Applied custom Qt stylesheets (QSS) to give the application a more modern, cohesive, and visually appealing color palette and typography.
 
-This work is licensed under a
-[Creative Commons Attribution-NonCommercial 4.0 International License][cc-by-nc].
+### 2. Improved User Feedback
+* Enhanced the visual states of progress bars and console log outputs so users can track the downloading process of large courses more comfortably.
+* Refined padding, margins, and widget alignment to ensure the interface looks professional across different screen resolutions.
 
-[![CC BY-NC 4.0][cc-by-nc-image]][cc-by-nc]
+## Core Engine Features (Powered by touhid314)
+*The underlying engine inherited from the original repository includes:*
+* **Seamless Cookie Extraction:** Automatic bypassing of complex login screens using `browser_cookie3`.
+* **Smart Batch Processing:** Background downloading with resume capabilities.
+* **Content Filtering:** Automatic resolution selection and subtitle downloading.
 
-[cc-by-nc]: https://creativecommons.org/licenses/by-nc/4.0/
-[cc-by-nc-image]: https://licensebuttons.net/l/by-nc/4.0/88x31.png
-[cc-by-nc-shield]: https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg
+## Interface Showcase
+
+*(Add your screenshots here showing your beautiful UI changes!)*
+---
+*UI/UX Customization by RoX452* | *Core Logic by touhid314*
+
+<!--
+Original License: CC BY-NC 4.0 / GPLv3 (See COPYING.txt)
+-->

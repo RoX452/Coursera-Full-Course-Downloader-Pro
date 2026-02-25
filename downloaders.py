@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Module for download-related classes and functions.
-
-We currently support an internal downloader written in Python with just the
-essential functionality and four "industrial-strength" external downloaders,
-namely, aria2c, axel, curl, and wget.
 """
 
 from __future__ import print_function
@@ -25,33 +21,15 @@ import requests
 class Downloader(object):
     """
     Base downloader class.
-
-    Every subclass should implement the _start_download method.
-
-    Usage::
-
-      >>> import downloaders
-      >>> d = downloaders.SubclassFromDownloader()
-      >>> d.download('http://example.com', 'save/to/this/file')
     """
 
     def _start_download(self, url, filename, resume):
-        """
-        Actual method to download the given url to the given file.
-        This method should be implemented by the subclass.
-        """
         raise NotImplementedError("Subclasses should implement this")
 
     def download(self, url, filename, resume=False):
-        """
-        Download the given url to the given file. When the download
-        is aborted by the user, the partially downloaded file is also removed.
-        """
-
         try:
             self._start_download(url, filename, resume)
         except KeyboardInterrupt as e:
-            # keep the file if resume is True
             if not resume:
                 logging.info('Keyboard Interrupt -- Removing partial file: %s',
                              filename)
@@ -65,15 +43,8 @@ class Downloader(object):
 class ExternalDownloader(Downloader):
     """
     Downloads files with an external downloader.
-
-    We could possibly use python to stream files to disk,
-    but this is slow compared to these external downloaders.
-
-    :param session: Requests session.
-    :param bin: External downloader binary.
     """
 
-    # External downloader binary
     bin = None
 
     def __init__(self, session, bin=None, downloader_arguments=None):
@@ -87,10 +58,6 @@ class ExternalDownloader(Downloader):
         self._check_bin()
 
     def _prepare_cookies(self, command, url):
-        """
-        Extract cookies from the requests session and add them to the command
-        """
-
         req = requests.models.Request()
         req.method = 'GET'
         req.url = url
@@ -102,29 +69,15 @@ class ExternalDownloader(Downloader):
             self._add_cookies(command, cookie_values)
 
     def _enable_resume(self, command):
-        """
-        Enable resume feature
-        """
-
         raise RuntimeError("Subclass should implement this")
 
     def _add_cookies(self, command, cookie_values):
-        """
-        Add the given cookie values to the command
-        """
-
         raise RuntimeError("Subclasses should implement this")
 
     def _create_command(self, url, filename):
-        """
-        Create command to execute in a subprocess.
-        """
         raise NotImplementedError("Subclasses should implement this")
 
     def _check_bin(self):
-        """
-        Make sure the downloader is installed
-        """
         try:
             ret = subprocess.run([self.bin, "--version"])
         except FileNotFoundError:
@@ -141,6 +94,11 @@ class ExternalDownloader(Downloader):
             self._enable_resume(command)
 
         logging.debug('Executing %s: %s', self.bin, command)
+        
+        # --- MODIFICACIÓN PARA GUI: Avisar nombre de archivo ---
+        logging.info('DOWNLOADING_FILE: %s', os.path.basename(filename))
+        # -------------------------------------------------------
+
         try:
             subprocess.call(command)
         except OSError as e:
@@ -150,10 +108,6 @@ class ExternalDownloader(Downloader):
 
 
 class WgetDownloader(ExternalDownloader):
-    """
-    Uses wget, which is robust and gives nice visual feedback.
-    """
-
     bin = 'wget'
 
     def _enable_resume(self, command):
@@ -168,10 +122,6 @@ class WgetDownloader(ExternalDownloader):
 
 
 class CurlDownloader(ExternalDownloader):
-    """
-    Uses curl, which is robust and gives nice visual feedback.
-    """
-
     bin = 'curl'
 
     def _enable_resume(self, command):
@@ -185,11 +135,6 @@ class CurlDownloader(ExternalDownloader):
 
 
 class Aria2Downloader(ExternalDownloader):
-    """
-    Uses aria2. Unfortunately, it does not give a nice visual feedback, but
-    gets the job done much faster than the alternatives.
-    """
-
     bin = 'aria2c'
 
     def _enable_resume(self, command):
@@ -205,11 +150,6 @@ class Aria2Downloader(ExternalDownloader):
 
 
 class AxelDownloader(ExternalDownloader):
-    """
-    Uses axel, which is robust and it both gives nice
-    visual feedback and get the job done fast.
-    """
-
     bin = 'axel'
 
     def _enable_resume(self, command):
@@ -226,7 +166,6 @@ class AxelDownloader(ExternalDownloader):
 def format_bytes(bytes):
     """
     Get human readable version of given bytes.
-    Ripped from https://github.com/rg3/youtube-dl
     """
     if bytes is None:
         return 'N/A'
@@ -244,7 +183,6 @@ def format_bytes(bytes):
 class DownloadProgress(object):
     """
     Report download progress.
-    Inspired by https://github.com/rg3/youtube-dl
     """
 
     def __init__(self, total):
@@ -258,6 +196,7 @@ class DownloadProgress(object):
         self._now = 0
 
         self._finished = False
+        self._last_percent = -1  # Para controlar el envío a la GUI
 
     def start(self):
         self._now = time.time()
@@ -284,13 +223,21 @@ class DownloadProgress(object):
             return '--%'
         if self._total == 0:
             return '100% done'
+        
         percentage = int(float(self._current) / float(self._total) * 100.0)
+        
+        # --- MODIFICACIÓN PARA GUI: Enviar señal solo si cambia el % ---
+        if percentage != self._last_percent:
+            logging.info('PROGRESS_BAR:%d', percentage)
+            self._last_percent = percentage
+        # -------------------------------------------------------------
+
         done = int(percentage / 2)
         return '[{0: <50}] {1}%'.format(done * '#', percentage)
 
     def calc_speed(self):
         dif = self._now - self._start
-        if self._current == 0 or dif < 0.001:  # One millisecond
+        if self._current == 0 or dif < 0.001:
             return '---b/s'
         return '{0}/s'.format(format_bytes(float(self._current) / dif))
 
@@ -306,6 +253,8 @@ class DownloadProgress(object):
 
         if self._finished:
             print(report)
+            # Asegurar 100% al final
+            logging.info('PROGRESS_BAR:100')
         else:
             print(report, end="")
         sys.stdout.flush()
@@ -314,8 +263,6 @@ class DownloadProgress(object):
 class NativeDownloader(Downloader):
     """
     'Native' python downloader -- slower than the external downloaders.
-
-    :param session: Requests session.
     """
 
     def __init__(self, session):
@@ -334,63 +281,73 @@ class NativeDownloader(Downloader):
         else:
             logging.info('Downloading %s -> %s', url, filename)
 
+        # --- MODIFICACIÓN PARA GUI: Avisar nombre de archivo limpio ---
+        logging.info('DOWNLOADING_FILE: %s', os.path.basename(filename))
+        # --------------------------------------------------------------
+
         max_attempts = 3
         attempts_count = 0
         error_msg = ''
+        
         while attempts_count < max_attempts:
-            r = self.session.get(url, stream=True, headers=headers)
+            try:
+                r = self.session.get(url, stream=True, headers=headers)
 
-            if r.status_code != 200:
-                # because in resume state we are downloading only a
-                # portion of requested file, server may return
-                # following HTTP codes:
-                # 206: Partial Content
-                # 416: Requested Range Not Satisfiable
-                # which are OK for us.
-                if resume and r.status_code == 206:
-                    pass
-                elif resume and r.status_code == 416:
-                    logging.info('%s already downloaded', filename)
-                    r.close()
-                    return True
-                else:
-                    print('%s %s %s' % (r.status_code, url, filesize))
-                    logging.warn('Probably the file is missing from the AWS '
-                                 'repository...  waiting.')
-
-                    if r.reason:
-                        error_msg = r.reason + ' ' + str(r.status_code)
+                if r.status_code != 200:
+                    if resume and r.status_code == 206:
+                        pass
+                    elif resume and r.status_code == 416:
+                        logging.info('%s already downloaded', filename)
+                        r.close()
+                        logging.info('PROGRESS_BAR:100') # GUI Fix
+                        return True
                     else:
-                        error_msg = 'HTTP Error ' + str(r.status_code)
+                        print('%s %s %s' % (r.status_code, url, filesize))
+                        logging.warn('Probably the file is missing from the AWS '
+                                     'repository...  waiting.')
 
-                    wait_interval = 2 ** (attempts_count + 1)
-                    msg = 'Error downloading, will retry in {0} seconds ...'
-                    print(msg.format(wait_interval))
-                    time.sleep(wait_interval)
-                    attempts_count += 1
-                    continue
+                        if r.reason:
+                            error_msg = r.reason + ' ' + str(r.status_code)
+                        else:
+                            error_msg = 'HTTP Error ' + str(r.status_code)
 
-            if resume and r.status_code == 200:
-                # if the server returns HTTP code 200 while we are in
-                # resume mode, it means that the server does not support
-                # partial downloads.
-                resume = False
+                        raise requests.exceptions.RequestException(error_msg)
 
-            content_length = r.headers.get('content-length')
-            chunk_sz = 1048576
-            progress = DownloadProgress(content_length)
-            progress.start()
-            f = open(filename, 'ab') if resume else open(filename, 'wb')
-            while True:
-                data = r.raw.read(chunk_sz, decode_content=True)
-                if not data:
-                    progress.stop()
-                    break
-                progress.report(r.raw.tell())
-                f.write(data)
-            f.close()
-            r.close()
-            return True
+                if resume and r.status_code == 200:
+                    resume = False
+
+                content_length = r.headers.get('content-length')
+                total_length = int(content_length) if content_length else None
+                
+                # Manejo especial para contenido parcial en la barra de progreso
+                if r.status_code == 206:
+                     # Si es 206, content-length es lo que falta, no el total.
+                     # Intentamos calcular el total real para la GUI si es posible
+                     pass 
+
+                chunk_sz = 1048576 # 1MB original (puedes bajarlo a 256*1024 si quieres más fluidez)
+                progress = DownloadProgress(total_length)
+                progress.start()
+                
+                f = open(filename, 'ab') if resume else open(filename, 'wb')
+                
+                for chunk in r.iter_content(chunk_size=chunk_sz):
+                    if chunk:
+                        f.write(chunk)
+                        progress.read(len(chunk))
+                
+                progress.stop()
+                f.close()
+                r.close()
+                return True
+
+            except Exception as e:
+                logging.warning('Error downloading (attempt %d/%d): %s',
+                                attempts_count + 1, max_attempts, str(e))
+                wait_interval = 2 ** (attempts_count + 1)
+                time.sleep(wait_interval)
+                attempts_count += 1
+                continue
 
         if attempts_count == max_attempts:
             logging.warn('Skipping, can\'t download file ...')

@@ -6,11 +6,18 @@ It also supports nested key paths for updates.
 
 import os
 import pickle
+import sys
 from os import path
 
 class SimpleDB:
     def __init__(self, filename='data.bin'):
-        self.filename = path.abspath(path.join(path.dirname(__file__), filename)) # use this, so that, in bundled package the file is in the same directory as the script also
+        # Fix para PyInstaller: Guardar data.bin junto al ejecutable, no en la carpeta temporal
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.dirname(__file__)
+            
+        self.filename = path.abspath(path.join(base_path, filename))
         self._data = self._load()
 
     def _load(self):
@@ -61,8 +68,6 @@ class SimpleDB:
             data_ref = data_ref[key]
 
         final_key = key_path[-1]
-        if final_key not in data_ref:
-            raise KeyError(f"Key '{final_key}' not found in path '{'.'.join(key_path)}'.")
         data_ref[final_key] = value
         self._save(self._data)
 
