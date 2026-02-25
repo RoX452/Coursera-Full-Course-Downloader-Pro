@@ -30,10 +30,6 @@ I redesigned the PyQt5 interface to make the tool feel more like a modern, premi
 * **Seamless Cookie Extraction:** Automatic bypassing of complex login screens using `browser_cookie3`.
 * **Smart Batch Processing:** Background downloading with resume capabilities.
 * **Content Filtering:** Automatic resolution selection and subtitle downloading.
-
-## Interface Showcase
-
-*(Add your screenshots here showing your beautiful UI changes!)*
 ---
 *UI/UX Customization by RoX452* | *Core Logic by touhid314*
 
